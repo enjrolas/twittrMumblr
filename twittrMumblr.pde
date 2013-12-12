@@ -97,13 +97,8 @@ ArrayList getTrendingTweets()
 
 
 void draw() {
-  background(lerpColor(currentColor, targetColor, (frameCount-startTime)/(timing-startTime)));
-  if (frameCount==timing)
-  {
-    targetColor= color(random(256), random(256), random(256));
-    timing=frameCount+random(500);   
-    startTime=frameCount;
-  }
+  colorFadingBackground();
+  
   if(displayTweets!=null)
   for(int i=0;i<displayTweets.size();i++)
     ((DisplayTweet)displayTweets.get(i)).display();
@@ -127,6 +122,18 @@ void draw() {
     else
       latestTweets=getTrendingTweets();  //refresh our tweets list
   }
+}
+
+void colorFadingBackground()
+{
+  background(lerpColor(currentColor, targetColor, (frameCount-startTime)/(timing-startTime)));
+  if (frameCount==timing)
+  {
+    targetColor= color(random(256), random(256), random(256));
+    timing=frameCount+random(500);   
+    startTime=frameCount;
+  }
+
 }
 
 //Thanks to Frontier Nerds' awesome code -- http://frontiernerds.com/text-to-speech-in-processing
