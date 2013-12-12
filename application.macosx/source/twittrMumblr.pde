@@ -26,14 +26,15 @@ Twitter twitter;
 ArrayList latestTweets;
 ArrayList displayTweets;
 int numberOfTweetsToDisplay=25;
+boolean gettingTrendingTweets=false;
 int woeid = 2487956;// yahoo's woeid (http://developer.yahoo.com/geo/geoplanet/guide/concepts.html) for the twitter location.
-          
+
 /* some sample WOEIDs.  You can look up more at http://woeid.rosselliot.co.nz/
-the world -- 1
-new york  -- 2459115
-san francisco -- 2487956
-manila    -- 1199477
-*/
+ the world -- 1
+ new york  -- 2459115
+ san francisco -- 2487956
+ manila    -- 1199477
+ */
 
 //Build an ArrayList to hold all of the words that we get from the imported tweets
 ArrayList<String> words = new ArrayList();
@@ -41,7 +42,7 @@ ArrayList<String> words = new ArrayList();
 void setup() {
   //Set the size of the stage, and the background to black.
   size(displayWidth, displayHeight);
-
+  text("loading trending tweets...", width/2, height/2);
   currentColor = color(random(256), random(256), random(256));
   targetColor=currentColor;
   timing=frameCount+(int)random(500);
@@ -61,7 +62,6 @@ void setup() {
   //– get status updates, run search queries, find follower information, etc. This Twitter object gets built by something
   //called the TwitterFactory, which needs our configuration information that we set above:
   twitter = new TwitterFactory(cb.build()).getInstance();
-  latestTweets=getTrendingTweets();
 }
 
 ArrayList getTrendingTweets()
@@ -90,42 +90,69 @@ ArrayList getTrendingTweets()
   catch (TwitterException te) {
     println("Couldn't connect: " + te);
   };
-
+  gettingTrendingTweets=false;
+  latestTweets=tweets;
   return tweets;
 }
 
 
 
 void draw() {
+  colorFadingBackground();
+
+  for (int i=0;i<displayTweets.size();i++)
+    ((DisplayTweet)displayTweets.get(i)).display();
+  if (latestTweets!=null)
+  {
+    if (millis()>(lastReading+readingTime))
+    {
+      lastReading=millis();
+      if (latestTweets.size()>0)  //if we've still got some sweet tweets to talk about
+      {
+
+        println(latestTweets.size());
+        int index=(int)random(latestTweets.size());
+        println((String)latestTweets.get(index));
+        TextToSpeech.say((String)latestTweets.get(index), TextToSpeech.voices[(int)random(TextToSpeech.voices.length)]);
+        readingTime=split((String)latestTweets.get(index), ' ').length*400;  //wait 400ms/word for the reading to finish
+        println(readingTime);
+        displayTweets.add(new DisplayTweet((String)latestTweets.get(index)));
+        if (displayTweets.size()>numberOfTweetsToDisplay)
+          displayTweets.remove(0);
+        latestTweets.remove(index);
+      }
+      else
+        if (!gettingTrendingTweets)
+        {
+          fill(0);
+          gettingTrendingTweets=true;
+          thread("getTrendingTweets");
+        }
+    }
+  }
+  else
+  {
+    println("no tweets yet");
+    String msg="pulling in trending tweets";
+    textSize(24);
+    text(msg, width/2-textWidth(msg)/2, height/2-24/2);
+    if (!gettingTrendingTweets)
+    {
+      fill(0);
+      gettingTrendingTweets=true;
+      thread("getTrendingTweets");
+    }
+  }
+}
+
+void colorFadingBackground()
+{
   background(lerpColor(currentColor, targetColor, (frameCount-startTime)/(timing-startTime)));
   if (frameCount==timing)
   {
     targetColor= color(random(256), random(256), random(256));
     timing=frameCount+random(500);   
     startTime=frameCount;
-  }
-  if(displayTweets!=null)
-  for(int i=0;i<displayTweets.size();i++)
-    ((DisplayTweet)displayTweets.get(i)).display();
-  if (millis()>(lastReading+readingTime))
-  {
-    lastReading=millis();
-    if (latestTweets.size()>0)  //if we've still got some sweet tweets to talk about
-    {
-      
-      println(latestTweets.size());
-      int index=(int)random(latestTweets.size());
-      println((String)latestTweets.get(index));
-      TextToSpeech.say((String)latestTweets.get(index), TextToSpeech.voices[(int)random(TextToSpeech.voices.length)]);
-      readingTime=split((String)latestTweets.get(index),' ').length*400;  //wait 400ms/word for the reading to finish
-      println(readingTime);
-      displayTweets.add(new DisplayTweet((String)latestTweets.get(index)));
-      if(displayTweets.size()>numberOfTweetsToDisplay)
-        displayTweets.remove(0);
-      latestTweets.remove(index);  
-    }
-    else
-      latestTweets=getTrendingTweets();  //refresh our tweets list
   }
 }
 
@@ -201,7 +228,7 @@ static class TextToSpeech extends Object {
   }
 }
 
-class DisplayTweet{
+class DisplayTweet {
   String tweet;
   int x, y;
   color tweetColor;
@@ -212,7 +239,7 @@ class DisplayTweet{
     tweet=_tweet;
     x=(int)random(width);
     y=(int)random(height);
-    tweetColor=color(random(256),random(256),random(256));
+    tweetColor=color(random(256), random(256), random(256));
     angle=random(2*PI);
     font=createFont(PFont.list()[(int)random(PFont.list().length)], 48);
   }
