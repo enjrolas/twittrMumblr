@@ -132,7 +132,6 @@ void draw() {
   }
   else
   {
-    println("no tweets yet");
     String msg="pulling in trending tweets";
     textSize(24);
     text(msg, width/2-textWidth(msg)/2, height/2-24/2);
